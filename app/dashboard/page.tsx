@@ -10,8 +10,11 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
+    console.log("Dashboard: user:", user)
+    console.log("Dashboard: loading:", loading)
     if (!loading && !user) {
-      router.push("/")
+      console.warn("No user found, redirecting to login")
+      router.push("/?error=no_user")
     }
   }, [user, loading, router])
 
@@ -30,7 +33,6 @@ export default function DashboardPage() {
     return null
   }
 
-  // Debugging: Log user data to console
   console.log("Usuario en dashboard:", user)
   console.log("Tipo de rol:", typeof user.role)
   console.log("Rol del usuario:", user.role)
@@ -38,9 +40,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {user.role === "docente" ? (
-        <DocenteDashboard user={user} />
+        <DocenteDashboard user={{ ...user, role: "docente" }} />
       ) : (
-        <EstudianteDashboard user={user} />
+        <EstudianteDashboard user={{ ...user, id: Number(user.id), role: "estudiante" }} />
       )}
     </div>
   )

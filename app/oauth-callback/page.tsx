@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -8,18 +8,20 @@ export default function OAuthCallbackPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
+  const [isProcessed, setIsProcessed] = useState(false)
 
   useEffect(() => {
+    if (isProcessed) return
+
     const handleOAuthCallback = async () => {
       try {
         console.log('=== OAuth Callback Processing ===')
-        
         const token = searchParams.get('token')
         const userString = searchParams.get('user')
         const error = searchParams.get('error')
 
-        console.log('Token received:', token ? 'Yes' : 'No')
-        console.log('User data received:', userString ? 'Yes' : 'No')
+        console.log('Token received:', token)
+        console.log('User string received:', userString)
         console.log('Error received:', error)
 
         if (error) {
@@ -34,11 +36,16 @@ export default function OAuthCallbackPage() {
           return
         }
 
-        // Parsear datos del usuario
-        const userData = JSON.parse(decodeURIComponent(userString))
-        console.log('Parsed user data:', userData)
-        
-        // Validar estructura de datos
+        let userData
+        try {
+          userData = JSON.parse(decodeURIComponent(userString))
+          console.log('Parsed user data:', userData)
+        } catch (parseError) {
+          console.error('Error parsing user data:', parseError)
+          router.push('/?error=user_data_parse_failed')
+          return
+        }
+
         const requiredFields = ['id', 'correo', 'nombre', 'rol']
         const missingFields = requiredFields.filter(field => !userData[field])
         
@@ -48,34 +55,39 @@ export default function OAuthCallbackPage() {
           return
         }
 
-        // Crear objeto de usuario compatible con el contexto
         const userForContext = {
           id: userData.id.toString(),
           username: userData.correo,
           name: userData.nombre,
-          role: userData.rol as "docente" | "estudiante",
+          role: userData.rol as "docente" | "estudiante" | "admin",
           email: userData.correo,
           provider: userData.provider || 'google',
           avatar: userData.avatar
         }
 
         console.log('User for context:', userForContext)
-
-        // Guardar en el contexto de autenticación
         await login(userForContext, token)
-        console.log('Login successful, redirecting to dashboard')
+        console.log('Token saved in localStorage:', localStorage.getItem("token"))
+        console.log('User saved in localStorage:', localStorage.getItem("user"))
         
-        // Redireccionar al dashboard
-        router.push("/dashboard")
+        try {
+          await router.push("/dashboard")
+          console.log("Redirected to /dashboard successfully")
+        } catch (routerError) {
+          console.error('Error redirecting to dashboard:', routerError)
+          router.push('/?error=dashboard_redirect_failed')
+        }
         
       } catch (error) {
         console.error('Error processing OAuth callback:', error)
         router.push('/?error=callback_processing_failed')
+      } finally {
+        setIsProcessed(true)
       }
     }
 
     handleOAuthCallback()
-  }, [searchParams, login, router])
+  }, [searchParams, login, router, isProcessed])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

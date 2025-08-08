@@ -113,8 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (userData: User, token: string) => {
     // Validar datos de entrada
-    const requiredFields = ['id', 'username', 'name', 'role', 'email']
-    const missingFields = requiredFields.filter(field => !(userData as unknown as Record<string, unknown>)[field])
+    const requiredFields = ['id', 'username', 'name', 'role', 'email'] as const
+    const missingFields = requiredFields.filter(field => !(userData as any)[field])
     
     if (missingFields.length > 0) {
       throw new Error(`Datos de usuario inválidos. Faltan: ${missingFields.join(", ")}`)

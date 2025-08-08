@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken') // AGREGAR esta línea que faltaba
 const Usuario = require("../models/usuario.model")
 const TokenManager = require("../../utils/tokenManager")
 
@@ -28,7 +27,6 @@ const auth = async (req, res, next) => {
     try {
       await TokenManager.verifyUniqueToken(token, usuario)
     } catch (tokenError) {
-      console.warn('Token verification failed:', tokenError.message)
       // Token no válido o no es el activo, invalidar y rechazar
       await usuario.invalidarToken()
       return res.status(401).json({
@@ -42,7 +40,6 @@ const auth = async (req, res, next) => {
     req.token = token
     next()
   } catch (error) {
-    console.error('Auth middleware error:', error)
     // Error en verificación JWT o cualquier otro error
     return res.status(401).json({
       success: false,
