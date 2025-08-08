@@ -1,18 +1,21 @@
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
-const Usuario = require('../models/usuarios')
+const Usuario = require('../src/models/usuario.model') // Corregir ruta
 
 // Configuración de Google OAuth
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "http://localhost:3001/auth/google/callback"
+  callbackURL: "http://localhost:3000/auth/google/callback" 
 }, async (accessToken, refreshToken, profile, done) => {
   try {
+    console.log('Google Profile:', profile)
+    
     // Buscar usuario existente por provider
     let usuario = await Usuario.findByProvider('google', profile.id)
     
     if (usuario) {
+      console.log('Usuario OAuth existente encontrado:', usuario.correo)
       // Usuario existe, actualizar información si es necesario
       if (usuario.avatar !== profile.photos[0]?.value) {
         usuario.avatar = profile.photos[0]?.value
@@ -27,6 +30,7 @@ passport.use(new GoogleStrategy({
     })
     
     if (usuarioExistente) {
+      console.log('Vinculando cuenta existente con Google:', usuarioExistente.correo)
       // Vincular cuenta existente con Google
       usuarioExistente.provider = 'google'
       usuarioExistente.providerId = profile.id
@@ -36,19 +40,21 @@ passport.use(new GoogleStrategy({
     }
     
     // Crear nuevo usuario
+    console.log('Creando nuevo usuario OAuth:', profile.emails[0].value)
     const nuevoUsuario = await Usuario.create({
       nombre: profile.displayName,
       correo: profile.emails[0].value,
       provider: 'google',
       providerId: profile.id,
       avatar: profile.photos[0]?.value,
-      rol: 'estudiante', // Rol por defecto, puedes cambiarlo según tu lógica
+      rol: 'estudiante', // Rol por defecto
       password: null // No tiene password local
     })
     
     return done(null, nuevoUsuario)
     
   } catch (error) {
+    console.error('Error en Google OAuth Strategy:', error)
     return done(error, null)
   }
 }))

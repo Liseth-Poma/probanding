@@ -343,5 +343,48 @@ const usuarioController = {
     }
   }
 }
+// Callback exitoso de OAuth (para redirección)
+oauthSuccess: async (req, res) => {
+  try {
+    console.log('=== OAuth Success Callback ===')
+    console.log('req.user:', req.user)
+    
+    if (!req.user) {
+      console.error('No user found in OAuth callback')
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=oauth_failed`)
+    }
 
+    // Extraer información del dispositivo
+    const deviceInfo = TokenManager.extractDeviceInfo(req)
+    console.log('Device info:', deviceInfo)
+
+    // Generar token único
+    const token = await TokenManager.setUniqueToken(req.user, deviceInfo)
+    console.log('Generated token for user:', req.user.correo)
+
+    // Preparar datos del usuario para el frontend
+    const userData = {
+      id: req.user.id,
+      nombre: req.user.nombre,
+      correo: req.user.correo,
+      rol: req.user.rol,
+      provider: req.user.provider,
+      avatar: req.user.avatar
+    }
+    
+    console.log('User data to send:', userData)
+
+    // Redireccionar al frontend con el token
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    const redirectUrl = `${frontendUrl}/oauth-callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`
+    
+    console.log('Redirecting to:', redirectUrl)
+    res.redirect(redirectUrl)
+    
+  } catch (error) {
+    console.error("Error en OAuth callback:", error)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    res.redirect(`${frontendUrl}?error=oauth_error`)
+  }
+}
 module.exports = usuarioController

@@ -12,9 +12,15 @@ export default function OAuthCallbackPage() {
   useEffect(() => {
     const handleOAuthCallback = async () => {
       try {
+        console.log('=== OAuth Callback Processing ===')
+        
         const token = searchParams.get('token')
         const userString = searchParams.get('user')
         const error = searchParams.get('error')
+
+        console.log('Token received:', token ? 'Yes' : 'No')
+        console.log('User data received:', userString ? 'Yes' : 'No')
+        console.log('Error received:', error)
 
         if (error) {
           console.error('OAuth error:', error)
@@ -30,6 +36,7 @@ export default function OAuthCallbackPage() {
 
         // Parsear datos del usuario
         const userData = JSON.parse(decodeURIComponent(userString))
+        console.log('Parsed user data:', userData)
         
         // Validar estructura de datos
         const requiredFields = ['id', 'correo', 'nombre', 'rol']
@@ -52,8 +59,11 @@ export default function OAuthCallbackPage() {
           avatar: userData.avatar
         }
 
+        console.log('User for context:', userForContext)
+
         // Guardar en el contexto de autenticación
         await login(userForContext, token)
+        console.log('Login successful, redirecting to dashboard')
         
         // Redireccionar al dashboard
         router.push("/dashboard")
